@@ -1,10 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+    --primary-bg: #121826;
+    --primary-text: #e5e7eb;
+    --accent-color: #ffd27d;
+
+    font-family: 'Nunito Sans', system-ui, sans-serif;
     line-height: 1.5;
     font-weight: 400;
     font-synthesis: none;
@@ -17,5 +23,7 @@
     margin: 0;
     min-width: 320px;
     min-height: 100vh;
+    background-color: var(--primary-bg);
+    color: var(--primary-text);
   }
 }
