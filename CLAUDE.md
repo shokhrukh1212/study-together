@@ -248,9 +248,9 @@ const handleAsyncOperation = async () => {
     return { success: true, data: result }
   } catch (error) {
     console.error('Operation failed:', error)
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
     }
   }
 }
