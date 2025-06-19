@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Sessions collection - public read/write for MVP
+    match /sessions/{sessionId} {
+      allow read, write: if true; // Public read/write for MVP
+      allow delete: if false; // Only server-side cleanup
+    }
+  }
+}
