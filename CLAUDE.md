@@ -33,6 +33,8 @@
 11. Don't use default exports
 12. Always use absolute paths in everywhere
 13. Always check eslint and prettier errors with proper commands
+14. Always handle TypeScript catch errors properly - error parameters are 'unknown' type
+15. After completing each feature, update WHAT_WAS_DONE.md with detailed explanation of what was implemented
 
 ## 3. Code Quality & Formatting
 
@@ -202,6 +204,65 @@ const calculateElapsedTime = (startTime: Timestamp): number => {
 ```
 
 This approach provides the accountability effect while minimizing Firestore writes and technical complexity.
+
+### **TypeScript Error Handling Requirements**
+
+Always handle catch blocks properly since TypeScript strict mode treats error parameters as `unknown`:
+
+```typescript
+// ❌ WRONG - Will cause TypeScript errors
+try {
+  await someAsyncOperation()
+} catch (error) {
+  console.error('Error details:', error.code, error.message) // TS Error: 'unknown' type
+}
+
+// ✅ CORRECT - Type guard for error handling
+try {
+  await someAsyncOperation()
+} catch (error) {
+  console.error('Operation failed:', error)
+  if (error instanceof Error) {
+    console.error('Error details:', error.message)
+  }
+}
+
+// ✅ CORRECT - Alternative with type assertion for Firebase errors
+try {
+  await firebaseOperation()
+} catch (error) {
+  console.error('Firebase operation failed:', error)
+  if (error instanceof Error) {
+    console.error('Error message:', error.message)
+  }
+  // For Firebase-specific error codes
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    console.error('Firebase error code:', (error as any).code)
+  }
+}
+
+// ✅ CORRECT - Simple error handling pattern
+const handleAsyncOperation = async () => {
+  try {
+    const result = await someOperation()
+    return { success: true, data: result }
+  } catch (error) {
+    console.error('Operation failed:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    }
+  }
+}
+```
+
+### **Error Handling Best Practices**
+
+1. **Always log the full error object first**: `console.error('Context:', error)`
+2. **Use type guards**: Check `error instanceof Error` before accessing properties
+3. **Provide fallback messages**: Handle cases where error might not be an Error instance
+4. **Firebase errors**: Firebase errors have additional properties like `code` that need type assertion
+5. **User-friendly messages**: Don't expose raw error messages to users in production
 
 ### **User Analytics Requirements**
 
@@ -448,7 +509,7 @@ Claude Code MUST run these commands before creating each PR:
 # Pre-PR checklist commands - ALL MUST PASS
 npm run prettier:fix   # Auto-format all files first
 npm run type-check     # TypeScript compilation
-npm run lint          # ESLint error checking  
+npm run lint          # ESLint error checking
 npm run prettier      # Prettier formatting verification
 npm run build         # Production build test
 npm run preview       # Local preview testing
@@ -473,7 +534,7 @@ Every PR must include evidence of passing these checks:
 ### Code Quality Checklist
 
 - [ ] `npm run type-check` - No TypeScript errors
-- [ ] `npm run lint` - No ESLint errors  
+- [ ] `npm run lint` - No ESLint errors
 - [ ] `npm run prettier` - All files properly formatted
 - [ ] `npm run build` - Production build successful
 - [ ] `npm run preview` - Preview works correctly
