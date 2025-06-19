@@ -8,6 +8,42 @@
 
 **Core Goal:** To test if the silent, visible presence of other focused individuals is enough to increase a user's motivation and study session length.
 
+**The Final MVP Blueprint**
+
+##### Goal: To create the simplest possible app that validates the hypothesis: "Does the silent, visible presence of other focused individuals increase a user's motivation and study session length?"
+
+- **State 1**: The "Lobby" (What a new user sees)
+
+Layout: Exactly as you described and designed. A clear headline, the live counter, and the list of active students are all visible.
+The Action Area:
+An input field: [ Enter your name ]
+A single button: [ Join the Study Room ]
+
+- **State 2**: The "Main Room" (After clicking "Join")
+
+The "Enter your name" input and "Join" button disappear.
+In their place, a new set of buttons appears:
+A primary, solid button: [ ► Start Study Session ]
+(Optional, but recommended) A secondary, less prominent "ghost" button below it: [ ← Leave Room ]. This simply takes them back to State 1.
+The user's name is now "in the room" but their timer has not started yet. They can see the list and prepare to focus.
+
+- **State 3**: "In Session" (After clicking "Start Study Session")
+
+The primary button [ ► Start Study Session ] instantly transforms into: [ ■ End Session ].
+The [ ← Leave Room ] button might hide itself to reduce clutter, or it can stay.
+The user's name, which is already in the list, now gets a timer next to it that starts counting up from 00:01.
+Their row in the list is highlighted with your accent color.
+
+- **State 4**: The Reset (After clicking "End Session")
+
+The user's timer disappears from the list, and their highlight is removed.
+The main button reverts back to [ ► Start Study Session ].
+The user is now back in the "Main Room" (State 2), free to take a break or start a new session whenever they are ready.
+Why This "Two-Step Start" is Slightly Better
+This small change—separating "Join" from "Start"—more closely mimics the real world. You walk into the library (Join), find your seat, arrange your books, and then you start working (Start Session). It makes starting the timer a deliberate act of commitment from the user, which is psychologically more powerful.
+
+This is it. This is the complete plan. It is simple, validated by your research, and technically achievable. You have everything you need. The planning and research phase is complete.
+
 ## 2. Technical Stack & Requirements (MVP Stack)
 
 ### **Primary Technologies**
@@ -17,6 +53,13 @@
 - **Styling**: **Tailwind CSS** (for rapid, responsive, mobile-first design).
 - **Deployment**: **Vercel** (for seamless, Git-based deployment).
 - **Analytics**: **Plausible** (or a similar simple tool).
+
+### UI constants
+
+- **Primary background color**: #121826
+- **Primary text color**: #E5E7EB
+- **Accent Color**: (for the button, numbers, and highlights) #FFD27D
+- **Primary font**: "Nunito Sans"
 
 ### **Development Principles**
 
@@ -35,6 +78,8 @@
 13. Always check eslint and prettier errors with proper commands
 14. Always handle TypeScript catch errors properly - error parameters are 'unknown' type
 15. After completing each feature, update WHAT_WAS_DONE.md with detailed explanation of what was implemented
+16. ALWAYS complete the full GitHub workflow automatically: commit → push → create PR → review → merge → switch to main
+17. Always create util functions, hooks everywhere, don't make large the size of component, keep them as small as possible, and leave understandable comments for each function or hook on what they are doing
 
 ## 3. Code Quality & Formatting
 
@@ -248,9 +293,9 @@ const handleAsyncOperation = async () => {
     return { success: true, data: result }
   } catch (error) {
     console.error('Operation failed:', error)
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
     }
   }
 }
@@ -366,7 +411,7 @@ fix/responsive-layout
 
 ### **GitHub CLI Workflow Commands**
 
-Claude Code should use these exact commands for each feature:
+Claude Code MUST automatically execute this complete workflow after finishing each feature:
 
 ```bash
 # 1. Start new feature
@@ -375,28 +420,69 @@ git pull origin main
 git checkout -b feature/[feature-name]
 
 # 2. Work on feature with regular commits
+# ... development work ...
+
+# 3. AUTOMATIC FEATURE COMPLETION WORKFLOW
+# Run code quality checks
+npm run prettier:fix
+npm run type-check && npm run lint && npm run prettier
+
+# Stage and commit final changes
 git add .
-git commit -m "feat: implement basic timer functionality"
+git commit -m "feat: [descriptive feature summary]"
 
-# 3. Push feature branch and create PR
+# Push feature branch
 git push -u origin feature/[feature-name]
-gh pr create --title "Add timer functionality" --body "Implements basic stopwatch timer with start/end controls
 
-**Changes:**
-- Add Timer component with local state management
-- Implement start/end session controls
-- Add timer display in MM:SS format
-- Handle browser tab visibility changes
+# Create PR with detailed description
+gh pr create --title "[Feature Title]" --body "$(cat <<'EOF'
+## Summary
+- Brief feature description
 
-**Testing:**
-- [x] Timer starts and stops correctly
-- [x] Timer persists through tab switches
-- [x] UI updates smoothly every second
-- [x] Mobile responsive design verified"
+## Changes
+- **Key Change 1**: Description
+- **Key Change 2**: Description
 
-# 4. After PR review/testing, merge
+## Code Quality Checklist
+- [x] \`npm run type-check\` - No TypeScript errors
+- [x] \`npm run lint\` - No ESLint errors
+- [x] \`npm run prettier\` - All files properly formatted
+- [x] \`npm run build\` - Production build successful
+
+## Testing
+- [x] Feature tested and working
+- [x] No console errors
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+EOF
+)"
+
+# Review the PR
+gh pr view [PR-number]
+
+# Merge PR with squash and delete branch
 gh pr merge [PR-number] --squash --delete-branch
+
+# Update WHAT_WAS_DONE.md with feature documentation
+# (This should be done before the final commit)
 ```
+
+### **MANDATORY Feature Completion Process**
+
+After implementing any feature, Claude Code MUST:
+
+1. ✅ **Code Quality**: Run all quality checks and fix issues
+2. ✅ **Documentation**: Update WHAT_WAS_DONE.md with detailed feature explanation
+3. ✅ **Commit**: Stage and commit all changes with descriptive message
+4. ✅ **Push**: Push feature branch to remote
+5. ✅ **PR Creation**: Create detailed PR with GitHub CLI
+6. ✅ **Review**: Display PR for review
+7. ✅ **Merge**: Merge PR with squash and delete branch
+8. ✅ **Main**: Return to main branch ready for next feature
+
+**NO EXCEPTIONS** - This workflow must be completed for every feature.
+
+````
 
 ### **Commit Message Format**
 
@@ -410,7 +496,7 @@ refactor: extract firebase logic to separate hook
 test: add timer accuracy verification
 docs: update README with deployment steps
 chore: update dependencies and build config
-```
+````
 
 ### **Feature Development Cycle**
 
