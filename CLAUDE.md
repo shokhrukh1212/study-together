@@ -472,8 +472,8 @@ gh pr merge [PR-number] --squash --delete-branch
 After implementing any feature, Claude Code MUST:
 
 1. ✅ **Code Quality**: Run all quality checks and fix issues
-2. ✅ **Documentation**: Update WHAT_WAS_DONE.md with detailed feature explanation
-3. ✅ **Commit**: Stage and commit all changes with descriptive message
+2. ✅ **Documentation**: Update WHAT_WAS_DONE.md with detailed feature explanation before committing
+3. ✅ **Commit**: Stage and commit all changes with descriptive and short message
 4. ✅ **Push**: Push feature branch to remote
 5. ✅ **PR Creation**: Create detailed PR with GitHub CLI
 6. ✅ **Review**: Display PR for review
