@@ -16,50 +16,18 @@ export const UserList = ({
   currentUser,
   isLobbyView = false,
 }: UserListProps) => {
-  if (allUsers.length === 0 && !isLobbyView) {
+  // Show user list if: lobby view OR current user exists (even if alone)
+  if (allUsers.length === 0 && !isLobbyView && !currentUser) {
     return null
   }
 
-  // Mock data for lobby view when showing examples - with simulated study times
-  const displayUsers = isLobbyView
-    ? [
-        {
-          id: '1',
-          name: 'Alice Wonderland',
-          status: 'active' as const,
-          sessionStartTime: null,
-          lastSeen: new Date(),
-          mockTime: '01:12:45',
-        },
-        {
-          id: '2',
-          name: 'Bob The Builder',
-          status: 'active' as const,
-          sessionStartTime: null,
-          lastSeen: new Date(),
-          mockTime: '00:47:19',
-        },
-        {
-          id: '3',
-          name: 'Charlie Brown',
-          status: 'active' as const,
-          sessionStartTime: null,
-          lastSeen: new Date(),
-          mockTime: '02:03:55',
-        },
-        {
-          id: '4',
-          name: 'Diana Prince',
-          status: 'active' as const,
-          sessionStartTime: null,
-          lastSeen: new Date(),
-          mockTime: '00:15:02',
-        },
-      ]
+  // Use real users for both lobby and study room views
+  const displayUsers = currentUser
+    ? [currentUser, ...allUsers.filter(u => u.id !== currentUser.id)]
     : allUsers
 
   return (
-    <div className="space-y-3 max-w-2xl mx-auto">
+    <div className="space-y-2 w-full max-h-80 overflow-y-auto">
       {displayUsers.map(user => {
         const isCurrentUser = currentUser?.id === user.id
         const isStudying =
@@ -68,43 +36,40 @@ export const UserList = ({
         return (
           <div
             key={user.id}
-            className={`flex items-center justify-between px-6 py-4 rounded-lg border ${
-              isCurrentUser
-                ? 'bg-accent/10 border-accent/30 text-accent'
-                : 'bg-primary-bg/50 border-primary-text/20 text-primary-text/80'
+            className={`w-full flex items-center justify-between p-3 ${
+              isCurrentUser ? 'text-accent' : 'text-primary-text'
             }`}
           >
             {/* User Name */}
-            <div className="flex items-center space-x-3">
-              <div
-                className={`w-2 h-2 rounded-full ${
-                  isStudying ? 'bg-green-400' : 'bg-primary-text/40'
-                }`}
-              />
-              <span className="font-medium text-lg">
-                {user.name}
-                {isCurrentUser && ' (You)'}
-              </span>
-            </div>
+            <span
+              className={`text-left ${isCurrentUser ? 'font-semibold text-accent' : ''}`}
+            >
+              {user.name}
+              {isCurrentUser && ' (You)'}
+            </span>
+
+            {/* Dotted line connector */}
+            <div
+              className="flex-grow border-b border-dotted border-primary-text/20 mx-2 h-0"
+              style={{ alignSelf: 'center' }}
+            />
 
             {/* Timer */}
-            <div className="text-right">
+            <span
+              className={`font-mono text-right ${isCurrentUser ? 'text-accent' : 'text-primary-text'}`}
+            >
               {isStudying ? (
                 <Timer
                   startTime={user.sessionStartTime}
                   isActive={true}
                   className={
-                    isCurrentUser ? 'text-accent' : 'text-primary-text/80'
+                    isCurrentUser ? 'text-accent' : 'text-primary-text'
                   }
                 />
               ) : (
-                <span className="text-primary-text/60 font-mono text-lg">
-                  {isLobbyView && 'mockTime' in user 
-                    ? (user as { mockTime: string }).mockTime 
-                    : '--:--:--'}
-                </span>
+                '--:--:--'
               )}
-            </div>
+            </span>
           </div>
         )
       })}

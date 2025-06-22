@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { AppState, Session } from '@/types/types'
+import { Timestamp } from 'firebase/firestore'
 
 /**
  * Custom hook to manage the main application state
@@ -7,11 +8,71 @@ import type { AppState, Session } from '@/types/types'
  * Manages user sessions and online count
  */
 export const useAppState = () => {
+  // Create mock users for testing
+  const mockUsers: Session[] = [
+    {
+      id: 'mock-1',
+      name: 'Alice Wonderland',
+      status: 'active',
+      sessionStartTime: Timestamp.fromDate(new Date(Date.now() - 4365000)), // 1h 12m 45s ago
+      lastSeen: Timestamp.fromDate(new Date()),
+    },
+    {
+      id: 'mock-2',
+      name: 'Bob The Builder',
+      status: 'active',
+      sessionStartTime: Timestamp.fromDate(new Date(Date.now() - 2839000)), // 47m 19s ago
+      lastSeen: Timestamp.fromDate(new Date()),
+    },
+    {
+      id: 'mock-3',
+      name: 'Charlie Brown',
+      status: 'active',
+      sessionStartTime: Timestamp.fromDate(new Date(Date.now() - 7435000)), // 2h 3m 55s ago
+      lastSeen: Timestamp.fromDate(new Date()),
+    },
+    {
+      id: 'mock-4',
+      name: 'Diana Prince',
+      status: 'active',
+      sessionStartTime: Timestamp.fromDate(new Date(Date.now() - 902000)), // 15m 2s ago
+      lastSeen: Timestamp.fromDate(new Date()),
+    },
+    {
+      id: 'mock-5',
+      name: 'Alice Wonderland',
+      status: 'active',
+      sessionStartTime: Timestamp.fromDate(new Date(Date.now() - 4365000)), // 1h 12m 45s ago
+      lastSeen: Timestamp.fromDate(new Date()),
+    },
+    {
+      id: 'mock-6',
+      name: 'Bob The Builder',
+      status: 'active',
+      sessionStartTime: Timestamp.fromDate(new Date(Date.now() - 2839000)), // 47m 19s ago
+      lastSeen: Timestamp.fromDate(new Date()),
+    },
+    {
+      id: 'mock-7',
+      name: 'Charlie Brown',
+      status: 'active',
+      sessionStartTime: Timestamp.fromDate(new Date(Date.now() - 7435000)), // 2h 3m 55s ago
+      lastSeen: Timestamp.fromDate(new Date()),
+    },
+    {
+      id: 'mock-8',
+      name: 'Diana Prince',
+      status: 'active',
+      sessionStartTime: Timestamp.fromDate(new Date(Date.now() - 902000)), // 15m 2s ago
+      lastSeen: Timestamp.fromDate(new Date()),
+    },
+  ]
+
   const [appState, setAppState] = useState<AppState>({
     view: 'lobby',
     currentUser: null,
-    allUsers: [],
-    totalOnline: 4, // Mock count to match lobby user list
+    allUsers: mockUsers, // Add mock users for testing
+    totalOnline: 8, // Set to 4 to show the users
   })
 
   /**
