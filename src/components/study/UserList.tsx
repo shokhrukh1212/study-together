@@ -22,9 +22,11 @@ export const UserList = ({
   }
 
   // Use real users for both lobby and study room views
-  const displayUsers = currentUser
-    ? [currentUser, ...allUsers.filter(u => u.id !== currentUser.id)]
-    : allUsers
+  // Only include currentUser if it exists and is not null
+  const displayUsers =
+    currentUser && currentUser.id
+      ? [currentUser, ...allUsers.filter(u => u.id !== currentUser.id)]
+      : allUsers
 
   return (
     <div className="space-y-2 w-full max-h-80 overflow-y-auto">

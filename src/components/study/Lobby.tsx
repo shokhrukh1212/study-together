@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { LobbyProps, Session } from '@/types/types'
 import { UserList } from './UserList'
 
@@ -26,6 +26,17 @@ export const Lobby = ({
   const [name, setName] = useState('')
   const [isJoining, setIsJoining] = useState(false)
 
+  // Reset joining state when user successfully joins or leaves
+  useEffect(() => {
+    if (currentUser && isJoining) {
+      setIsJoining(false)
+    }
+    if (!currentUser && isJoining) {
+      setIsJoining(false)
+      setName('') // Clear name for next user
+    }
+  }, [currentUser, isJoining])
+
   /**
    * Handles form submission to join the study room
    * Validates name input and triggers join flow
@@ -38,6 +49,7 @@ export const Lobby = ({
     setIsJoining(true)
     try {
       await onJoin(name.trim())
+      // Note: isJoining will be reset when currentUser updates and UI changes
     } catch (error) {
       console.error('Failed to join room:', error)
       setIsJoining(false)

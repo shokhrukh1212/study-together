@@ -1,10 +1,15 @@
 rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Sessions collection - public read/write for MVP
-    match /sessions/{sessionId} {
-      allow read, write: if true; // Public read/write for MVP
-      allow delete: if false; // Only server-side cleanup
+  service cloud.firestore {
+    match /databases/{database}/documents {
+      // StudyTogether MVP - Public access to sessions collection only
+      match /sessions/{sessionId} {
+        allow read, write: if true; // Anyone can read/write sessions
+        allow delete: if false; // Only server-side cleanup (prevents abuse)
+      }
+
+      // Deny access to any other collections
+      match /{document=**} {
+        allow read, write: if false;
+      }
     }
   }
-}
