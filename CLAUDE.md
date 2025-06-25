@@ -212,7 +212,26 @@ export interface StudyRoomProps {
 4. **Real-time Presence:** A live counter shows "X people are studying right now."
 5. **Live User List:** A real-time list of participants and their timers.
 6. **User Presence Management:** Automatic removal of users who close their browser.
-7. **Simple Feedback Link:** A mailto: link in the footer.
+7. **Feadback Modal feature after the user session is complete:** Below is the details for the Feedback feature:
+   - Right after the user has finished the session, we will show a Modal with a title "Rate your experience"
+   - There will be a description that says "Great, you've focused X minutes, or X hours. How was your experience"
+   - After the title and description, there will be Bad, Decent, and Love it Icons, so that users can choose one of them
+   - For the first Modal view, this is all
+   - When the user chooses one of the icons, a new textarea is opened below the icons with a placeholder "Tell us more"
+   - Under the textarea, there will be a Submit button to submit the form
+   - After the submit, the content transforms into "Thank you for your feedback!" in place, and the Modal automatically fades out after 2-3 seconds
+   - We should apply nice and very smooth animations
+   - Constants for the UI:
+     - Modal background: #1E293B
+     - Modal text: #E5E7EB
+     - Icons color (when not selected): #94A3B8
+     - Icons color (when selected): #FFD27D
+     - Textarea background: #1E293B
+     - Textarea text color: #E5E7EB
+     - Submit button background: #FFD27D
+     - Submit button text: #121826
+     - "Thank you" modal background: #1E293B
+     - "Thank you" modal text: #E5E7EB
 
 ### **Core UI Components to Build:**
 

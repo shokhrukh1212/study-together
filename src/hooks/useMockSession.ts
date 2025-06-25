@@ -12,6 +12,9 @@ interface UseMockSessionReturn {
   startSession: () => Promise<void>
   endSession: () => Promise<void>
   leaveRoom: () => Promise<void>
+  showFeedbackModal: boolean
+  sessionDuration: number
+  closeFeedbackModal: () => void
 }
 
 /**
@@ -21,6 +24,8 @@ interface UseMockSessionReturn {
 export const useMockSession = (): UseMockSessionReturn => {
   const [currentUser, setCurrentUser] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
+  const [sessionDuration, setSessionDuration] = useState(0)
 
   // Mock users for testing
   const mockUsers: Session[] = [
@@ -88,16 +93,39 @@ export const useMockSession = (): UseMockSessionReturn => {
     if (!currentUser) return
 
     console.log('🎭 Mock: Ending session')
+
+    // Calculate session duration
+    let duration = 0
+    if (currentUser.sessionStartTime) {
+      duration = Math.floor(
+        (Date.now() - currentUser.sessionStartTime.toMillis()) / 1000
+      )
+      setSessionDuration(duration)
+    }
+
     setCurrentUser({
       ...currentUser,
       status: 'idle',
       sessionStartTime: null,
     })
+
+    // Show feedback modal if session was at least 30 seconds long
+    if (duration >= 30) {
+      setShowFeedbackModal(true)
+    }
   }, [currentUser])
 
   const leaveRoom = useCallback(async () => {
     console.log('🎭 Mock: Leaving room')
     setCurrentUser(null)
+  }, [])
+
+  /**
+   * Closes the feedback modal
+   */
+  const closeFeedbackModal = useCallback(() => {
+    setShowFeedbackModal(false)
+    setSessionDuration(0)
   }, [])
 
   return {
@@ -110,5 +138,8 @@ export const useMockSession = (): UseMockSessionReturn => {
     startSession,
     endSession,
     leaveRoom,
+    showFeedbackModal,
+    sessionDuration,
+    closeFeedbackModal,
   }
 }

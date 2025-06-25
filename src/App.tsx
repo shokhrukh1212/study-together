@@ -1,4 +1,5 @@
 import { Lobby } from '@/components/study/Lobby'
+import { FeedbackModal } from '@/components/study/FeedbackModal'
 import { useFirebaseSession } from '@/hooks/useFirebaseSession'
 import { useMockSession } from '@/hooks/useMockSession'
 import { collection } from 'firebase/firestore'
@@ -30,6 +31,9 @@ export const App = () => {
     startSession,
     endSession,
     leaveRoom,
+    showFeedbackModal,
+    sessionDuration,
+    closeFeedbackModal,
   } = USE_MOCK_MODE ? mockSession : firebaseSession
 
   // Show error state if Firebase connection fails
@@ -80,6 +84,13 @@ export const App = () => {
         onStartSession={startSession}
         onEndSession={endSession}
         onLeaveRoom={leaveRoom}
+      />
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        sessionDuration={sessionDuration}
+        onClose={closeFeedbackModal}
       />
     </>
   )

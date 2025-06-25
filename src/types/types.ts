@@ -27,3 +27,15 @@ export interface StudyRoomProps {
   onStartSession: () => void
   onEndSession: () => void
 }
+
+// Feedback system types
+export type FeedbackRating = 'bad' | 'decent' | 'love'
+
+export interface FeedbackSubmission {
+  rating: FeedbackRating
+  text: string | null
+  sessionDuration: number // in seconds
+  timestamp: Timestamp
+  userAgent: string
+  url: string
+}
