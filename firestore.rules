@@ -7,10 +7,11 @@ service cloud.firestore {
       allow delete: if false; // Only server-side cleanup (prevents abuse)
     }
 
-    // Feedback collection - Write-only for users, read-only for admin
+    // Feedback collection - Public read for analytics, write-only for submissions
     match /feedback/{feedbackId} {
       allow create: if true; // Anyone can submit feedback
-      allow read, update, delete: if false; // Only admin can read via Firebase console
+      allow read: if true; // Allow read access for analytics (no sensitive data)
+      allow update, delete: if false; // No updates or deletions allowed
     }
 
     // Deny access to any other collections
