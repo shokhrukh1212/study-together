@@ -24,6 +24,9 @@ interface UseFirebaseSessionReturn {
   startSession: () => Promise<void>
   endSession: () => Promise<void>
   leaveRoom: () => Promise<void>
+  showFeedbackModal: boolean
+  sessionDuration: number
+  closeFeedbackModal: () => void
 }
 
 /**
@@ -37,6 +40,8 @@ export const useFirebaseSession = (
   const [allUsers, setAllUsers] = useState<Session[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
+  const [sessionDuration, setSessionDuration] = useState(0)
 
   const updateUserHeartbeat = async (userId: string) => {
     try {
@@ -178,12 +183,26 @@ export const useFirebaseSession = (
     if (!currentUser) return
 
     try {
+      // Calculate session duration before ending
+      let duration = 0
+      if (currentUser.sessionStartTime) {
+        duration = Math.floor(
+          (Date.now() - currentUser.sessionStartTime.toMillis()) / 1000
+        )
+        setSessionDuration(duration)
+      }
+
       // Batch operation: combine status, sessionEnd, and heartbeat in single write
       await updateDoc(doc(db, 'sessions', currentUser.id), {
         status: 'idle',
         sessionStartTime: null,
         lastSeen: serverTimestamp(), // Combined heartbeat update
       })
+
+      // Show feedback modal if session was at least 30 seconds long
+      if (duration >= 30) {
+        setShowFeedbackModal(true)
+      }
     } catch (error) {
       console.error('Failed to end session:', error)
       setError('Failed to end session')
@@ -259,6 +278,14 @@ export const useFirebaseSession = (
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [currentUser])
 
+  /**
+   * Closes the feedback modal
+   */
+  const closeFeedbackModal = useCallback(() => {
+    setShowFeedbackModal(false)
+    setSessionDuration(0)
+  }, [])
+
   return {
     currentUser,
     allUsers,
@@ -269,5 +296,8 @@ export const useFirebaseSession = (
     startSession,
     endSession,
     leaveRoom,
+    showFeedbackModal,
+    sessionDuration,
+    closeFeedbackModal,
   }
 }

@@ -6,6 +6,18 @@
   --color-primary-text: #e5e7eb;
   --color-accent: #ffd27d;
 
+  /* Feedback Modal Constants */
+  --color-feedback-modal-bg: #1e293b;
+  --color-feedback-modal-text: #e5e7eb;
+  --color-feedback-icon-default: #94a3b8;
+  --color-feedback-icon-selected: #ffd27d;
+  --color-feedback-textarea-bg: #1e293b;
+  --color-feedback-textarea-text: #e5e7eb;
+  --color-feedback-submit-bg: #ffd27d;
+  --color-feedback-submit-text: #121826;
+  --color-feedback-thankyou-bg: #1e293b;
+  --color-feedback-thankyou-text: #e5e7eb;
+
   --font-family-sans: 'Nunito Sans', system-ui, sans-serif;
 }
 
@@ -23,5 +35,66 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  /* Feedback Modal Animations */
+  .feedback-modal-backdrop {
+    animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .feedback-modal-container {
+    animation: modalSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .feedback-textarea-container {
+    animation: slideInFromTop 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .feedback-thankyou-container {
+    animation: zoomInScale 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes modalSlideIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0px);
+    }
+  }
+
+  @keyframes slideInFromTop {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0px);
+    }
+  }
+
+  @keyframes zoomInScale {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 }

@@ -29,6 +29,6 @@ export const cleanupAllSessions = async () => {
 }
 
 // Run cleanup if called directly
-if (import.meta.url === new URL(import.meta.resolve('./cleanup.ts'))) {
+if (import.meta.url === new URL(import.meta.resolve('./cleanup.ts')).href) {
   cleanupAllSessions()
 }
