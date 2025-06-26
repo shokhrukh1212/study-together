@@ -4,7 +4,6 @@ import {
   doc,
   addDoc,
   updateDoc,
-  deleteDoc,
   onSnapshot,
   query,
   orderBy,
@@ -13,6 +12,8 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase/firebase'
 import type { Session } from '@/types/types'
+import { archiveSession } from '@/utils/sessionArchive'
+import { saveCompletedSession } from '@/utils/completedSessions'
 
 interface UseFirebaseSessionReturn {
   currentUser: Session | null
@@ -180,23 +181,28 @@ export const useFirebaseSession = (
   }, [currentUser])
 
   const endSession = useCallback(async () => {
-    if (!currentUser) return
+    if (!currentUser || !currentUser.sessionStartTime) return
 
     try {
-      // Calculate session duration before ending
-      let duration = 0
-      if (currentUser.sessionStartTime) {
-        duration = Math.floor(
-          (Date.now() - currentUser.sessionStartTime.toMillis()) / 1000
-        )
-        setSessionDuration(duration)
-      }
+      const sessionEndTime = Timestamp.now()
+      const duration = Math.floor(
+        (sessionEndTime.toMillis() - currentUser.sessionStartTime.toMillis()) /
+          1000
+      )
+      setSessionDuration(duration)
 
-      // Batch operation: combine status, sessionEnd, and heartbeat in single write
+      // Save the completed session to completed_sessions collection
+      await saveCompletedSession(
+        currentUser,
+        currentUser.sessionStartTime,
+        sessionEndTime
+      )
+
+      // Update the current session status (reset to idle)
       await updateDoc(doc(db, 'sessions', currentUser.id), {
         status: 'idle',
         sessionStartTime: null,
-        lastSeen: serverTimestamp(), // Combined heartbeat update
+        lastSeen: serverTimestamp(),
       })
 
       // Show feedback modal if session was at least 30 seconds long
@@ -217,8 +223,8 @@ export const useFirebaseSession = (
       setCurrentUser(null)
       localStorage.removeItem('study-app-user-id')
 
-      // Remove from Firebase (this will also update allUsers via listener)
-      await deleteDoc(doc(db, 'sessions', currentUser.id))
+      // Archive session instead of deleting to preserve data for analytics
+      await archiveSession(currentUser)
     } catch (error) {
       console.error('Failed to leave room:', error)
       setError('Failed to leave room')

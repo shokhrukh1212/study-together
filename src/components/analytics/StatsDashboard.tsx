@@ -248,6 +248,14 @@ export const StatsDashboard = ({
                 </span>
               </div>
               <div className="flex justify-between">
+                <span className="text-primary-text/70">Unique Users</span>
+                <span className="text-primary-text font-medium">
+                  {analyticsService.formatNumber(
+                    liveStats?.allTimeUniqueUsers || 0
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-primary-text/70">Feedback Submitted</span>
                 <span className="text-primary-text font-medium">
                   {liveStats?.totalFeedbackSubmitted || 0}

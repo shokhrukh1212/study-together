@@ -1,22 +1,36 @@
 rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // StudyTogether MVP - Public access to sessions collection
-    match /sessions/{sessionId} {
-      allow read, write: if true; // Anyone can read/write sessions
-      allow delete: if false; // Only server-side cleanup (prevents abuse)
-    }
+  service cloud.firestore {
+    match /databases/{database}/documents {
+      // StudyTogether MVP - Public access to sessions collection
+      match /sessions/{sessionId} {
+        allow read, write: if true; // Anyone can read/write sessions
+        allow delete: if false; // Only server-side cleanup (prevents abuse)
+      }
 
-    // Feedback collection - Public read for analytics, write-only for submissions
-    match /feedback/{feedbackId} {
-      allow create: if true; // Anyone can submit feedback
-      allow read: if true; // Allow read access for analytics (no sensitive data)
-      allow update, delete: if false; // No updates or deletions allowed
-    }
+      // Session history collection - Read-only for analytics
+      match /session_history/{sessionHistoryId} {
+        allow read: if true; // Anyone can read session history for analytics
+        allow create: if true; // Allow archiving sessions
+        allow update, delete: if false; // No updates or deletions allowed
+      }
 
-    // Deny access to any other collections
-    match /{document=**} {
-      allow read, write: if false;
+      // Completed sessions collection - Primary data source for analytics
+      match /completed_sessions/{completedSessionId} {
+        allow read: if true; // Anyone can read for analytics
+        allow create: if true; // Allow saving completed sessions
+        allow update, delete: if false; // No updates or deletions allowed
+      }
+
+      // Feedback collection - Public read for analytics, write-only for submissions
+      match /feedback/{feedbackId} {
+        allow create: if true; // Anyone can submit feedback
+        allow read: if true; // Allow read access for analytics (no sensitive data)
+        allow update, delete: if false; // No updates or deletions allowed
+      }
+
+      // Deny access to any other collections
+      match /{document=**} {
+        allow read, write: if false;
+      }
     }
   }
-}
