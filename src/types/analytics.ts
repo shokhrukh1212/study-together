@@ -47,6 +47,7 @@ export interface LiveStats {
   todayAverageSession: number
   allTimeTotalStudyTime: number
   allTimeCompletedSessions: number
+  allTimeUniqueUsers: number
   totalFeedbackSubmitted: number
 }
 

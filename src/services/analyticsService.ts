@@ -8,11 +8,11 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase/firebase'
 import type { LiveStats, HourlyActivity } from '@/types/analytics'
-import type { Session } from '@/types/types'
+import type { Session, CompletedSession } from '@/types/types'
 
 /**
  * Analytics service for collecting and calculating user statistics from Firebase
- * Uses existing sessions and feedback collections for data source
+ * Now uses completed_sessions collection as primary data source for accurate statistics
  */
 export class AnalyticsService {
   private static instance: AnalyticsService
@@ -53,49 +53,55 @@ export class AnalyticsService {
   }
 
   /**
-   * Calculate session duration from session data
+   * Get all completed sessions from Firebase
    */
-  private calculateSessionDuration(session: Session): number {
-    if (!session.sessionStartTime) return 0
-
-    // Use lastSeen as end time for active sessions, or current time
-    const endTime =
-      session.status === 'idle' ? session.lastSeen.toMillis() : Date.now()
-
-    return Math.floor((endTime - session.sessionStartTime.toMillis()) / 1000)
-  }
-
-  /**
-   * Get all sessions from Firebase
-   */
-  private async getAllSessions(): Promise<Session[]> {
-    const sessionsRef = collection(db, 'sessions')
-    const snapshot = await getDocs(sessionsRef)
+  private async getAllCompletedSessions(): Promise<CompletedSession[]> {
+    const completedSessionsRef = collection(db, 'completed_sessions')
+    const snapshot = await getDocs(completedSessionsRef)
 
     return snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
-    })) as Session[]
+    })) as CompletedSession[]
   }
 
   /**
-   * Get today's sessions
+   * Get today's completed sessions
    */
-  private async getTodaySessions(): Promise<Session[]> {
-    const sessionsRef = collection(db, 'sessions')
+  private async getTodayCompletedSessions(): Promise<CompletedSession[]> {
     const todayStart = this.getTodayStart()
+    const completedSessionsRef = collection(db, 'completed_sessions')
 
     const q = query(
-      sessionsRef,
-      where('lastSeen', '>=', todayStart),
-      orderBy('lastSeen', 'desc')
+      completedSessionsRef,
+      where('completedAt', '>=', todayStart),
+      orderBy('completedAt', 'desc')
     )
 
     const snapshot = await getDocs(q)
     return snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
+    })) as CompletedSession[]
+  }
+
+  /**
+   * Get currently active users from sessions collection
+   */
+  private async getCurrentActiveUsers(): Promise<Session[]> {
+    const sessionsRef = collection(db, 'sessions')
+    const snapshot = await getDocs(sessionsRef)
+
+    const sessions = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
     })) as Session[]
+
+    // Filter to users seen in last 5 minutes
+    const fiveMinutesAgo = Date.now() - 5 * 60 * 1000
+    return sessions.filter(
+      session => session.lastSeen.toMillis() > fiveMinutesAgo
+    )
   }
 
   /**
@@ -108,29 +114,25 @@ export class AnalyticsService {
   }
 
   /**
-   * Calculate live statistics
+   * Calculate live statistics using completed_sessions as primary data source
    */
   public async getLiveStats(): Promise<LiveStats> {
     return this.getCachedOrFetch('liveStats', async () => {
-      const [allSessions, todaySessions, totalFeedback] = await Promise.all([
-        this.getAllSessions(),
-        this.getTodaySessions(),
+      const [
+        allCompletedSessions,
+        todayCompletedSessions,
+        currentActiveUsers,
+        totalFeedback,
+      ] = await Promise.all([
+        this.getAllCompletedSessions(),
+        this.getTodayCompletedSessions(),
+        this.getCurrentActiveUsers(),
         this.getFeedbackCount(),
       ])
 
-      // Current active users (sessions created in last 5 minutes)
-      const fiveMinutesAgo = Date.now() - 5 * 60 * 1000
-      const currentActiveUsers = allSessions.filter(
-        session => session.lastSeen.toMillis() > fiveMinutesAgo
-      ).length
-
-      // Today's stats
-      const todayCompletedSessions = todaySessions.filter(
-        session => session.sessionStartTime !== null
-      )
-
+      // Today's stats from completed sessions
       const todayTotalStudyTime = todayCompletedSessions.reduce(
-        (total, session) => total + this.calculateSessionDuration(session),
+        (total, session) => total + session.sessionDuration,
         0
       )
 
@@ -139,35 +141,42 @@ export class AnalyticsService {
           ? Math.round(todayTotalStudyTime / todayCompletedSessions.length)
           : 0
 
-      // All-time stats
-      const allCompletedSessions = allSessions.filter(
-        session => session.sessionStartTime !== null
-      )
-
+      // All-time stats from completed sessions
       const allTimeTotalStudyTime = allCompletedSessions.reduce(
-        (total, session) => total + this.calculateSessionDuration(session),
+        (total, session) => total + session.sessionDuration,
         0
       )
 
+      // Count unique users who have completed sessions today
+      const todayUniqueUsers = new Set(
+        todayCompletedSessions.map(session => session.userId)
+      ).size
+
+      // Count all-time unique users who have ever completed a session
+      const allTimeUniqueUsers = new Set(
+        allCompletedSessions.map(session => session.userId)
+      ).size
+
       return {
-        currentActiveUsers,
-        todayActiveUsers: todaySessions.length,
+        currentActiveUsers: currentActiveUsers.length,
+        todayActiveUsers: todayUniqueUsers,
         todayTotalStudyTime,
         todayCompletedSessions: todayCompletedSessions.length,
         todayAverageSession,
         allTimeTotalStudyTime,
         allTimeCompletedSessions: allCompletedSessions.length,
+        allTimeUniqueUsers,
         totalFeedbackSubmitted: totalFeedback,
       }
     })
   }
 
   /**
-   * Get hourly activity breakdown for today
+   * Get hourly activity breakdown for today using completed sessions
    */
   public async getTodayHourlyActivity(): Promise<HourlyActivity[]> {
     return this.getCachedOrFetch('hourlyActivity', async () => {
-      const todaySessions = await this.getTodaySessions()
+      const todayCompletedSessions = await this.getTodayCompletedSessions()
 
       const hourlyData: {
         [hour: number]: { sessions: number; users: Set<string> }
@@ -178,13 +187,11 @@ export class AnalyticsService {
         hourlyData[i] = { sessions: 0, users: new Set() }
       }
 
-      // Count sessions and unique users per hour
-      todaySessions.forEach(session => {
-        if (session.sessionStartTime) {
-          const hour = session.sessionStartTime.toDate().getHours()
-          hourlyData[hour].sessions++
-          hourlyData[hour].users.add(session.name) // Use name as user identifier
-        }
+      // Count completed sessions and unique users per hour
+      todayCompletedSessions.forEach(session => {
+        const hour = session.startTime.toDate().getHours()
+        hourlyData[hour].sessions++
+        hourlyData[hour].users.add(session.userId)
       })
 
       // Convert to array format
@@ -197,7 +204,7 @@ export class AnalyticsService {
   }
 
   /**
-   * Get user retention stats (users with multiple sessions)
+   * Get user retention stats using completed sessions
    */
   public async getUserRetentionStats(): Promise<{
     totalUniqueUsers: number
@@ -205,15 +212,15 @@ export class AnalyticsService {
     retentionRate: number
   }> {
     return this.getCachedOrFetch('retentionStats', async () => {
-      const allSessions = await this.getAllSessions()
+      const allCompletedSessions = await this.getAllCompletedSessions()
 
-      // Group sessions by user name (our user identifier)
-      const userSessions: { [name: string]: Session[] } = {}
-      allSessions.forEach(session => {
-        if (!userSessions[session.name]) {
-          userSessions[session.name] = []
+      // Group sessions by user ID
+      const userSessions: { [userId: string]: CompletedSession[] } = {}
+      allCompletedSessions.forEach(session => {
+        if (!userSessions[session.userId]) {
+          userSessions[session.userId] = []
         }
-        userSessions[session.name].push(session)
+        userSessions[session.userId].push(session)
       })
 
       const totalUniqueUsers = Object.keys(userSessions).length
@@ -236,6 +243,7 @@ export class AnalyticsService {
 
   /**
    * Get session completion rate
+   * Compares total people who joined vs people who completed at least one session
    */
   public async getSessionCompletionRate(): Promise<{
     totalSessions: number
@@ -243,21 +251,28 @@ export class AnalyticsService {
     completionRate: number
   }> {
     return this.getCachedOrFetch('completionRate', async () => {
-      const allSessions = await this.getAllSessions()
+      // Get all sessions (people who joined)
+      const sessionsRef = collection(db, 'sessions')
+      const sessionHistoryRef = collection(db, 'session_history')
 
-      const totalSessions = allSessions.length
-      const completedSessions = allSessions.filter(
-        session => session.sessionStartTime !== null
-      ).length
+      const [sessionsSnapshot, historySnapshot, completedSessions] =
+        await Promise.all([
+          getDocs(sessionsRef),
+          getDocs(sessionHistoryRef),
+          this.getAllCompletedSessions(),
+        ])
+
+      const totalSessions = sessionsSnapshot.size + historySnapshot.size
+      const actualCompletedSessions = completedSessions.length
 
       const completionRate =
         totalSessions > 0
-          ? Math.round((completedSessions / totalSessions) * 100)
+          ? Math.round((actualCompletedSessions / totalSessions) * 100)
           : 0
 
       return {
         totalSessions,
-        completedSessions,
+        completedSessions: actualCompletedSessions,
         completionRate,
       }
     })
