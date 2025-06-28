@@ -24,14 +24,26 @@ export const FeedbackModal = ({
   const [feedbackText, setFeedbackText] = useState('')
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isVisible, setIsVisible] = useState(false)
+  const [shouldRender, setShouldRender] = useState(false)
 
-  // Reset modal state when it opens
+  // Handle modal open/close animations
   useEffect(() => {
     if (isOpen) {
+      // Reset modal state when it opens
       setSelectedRating(null)
       setFeedbackText('')
       setIsSubmitted(false)
       setIsSubmitting(false)
+
+      // Start opening animation
+      setShouldRender(true)
+      setTimeout(() => setIsVisible(true), 10) // Small delay for DOM to render
+    } else {
+      // Start closing animation
+      setIsVisible(false)
+      // Remove from DOM after animation completes
+      setTimeout(() => setShouldRender(false), 300)
     }
   }, [isOpen])
 
@@ -44,6 +56,20 @@ export const FeedbackModal = ({
       return () => clearTimeout(timer)
     }
   }, [isSubmitted, onClose])
+
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen && !isSubmitted) {
+        onClose()
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscKey)
+      return () => document.removeEventListener('keydown', handleEscKey)
+    }
+  }, [isOpen, isSubmitted, onClose])
 
   /**
    * Formats session duration into human-readable text
@@ -91,8 +117,6 @@ export const FeedbackModal = ({
 
       // Save to Firebase
       await addDoc(collection(db, 'feedback'), feedbackData)
-
-      console.log('✅ Feedback submitted successfully to Firebase')
       setIsSubmitted(true)
     } catch (error) {
       console.error('❌ Failed to submit feedback:', error)
@@ -105,16 +129,55 @@ export const FeedbackModal = ({
     }
   }
 
-  if (!isOpen) return null
+  /**
+   * Handle click outside to close modal
+   */
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget && !isSubmitted) {
+      onClose()
+    }
+  }
+
+  if (!shouldRender) return null
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 feedback-modal-backdrop">
+    <div
+      className={`fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 feedback-modal-backdrop transition-opacity duration-300 ${
+        isVisible ? 'opacity-100' : 'opacity-0'
+      }`}
+      onClick={handleBackdropClick}
+    >
       <div
-        className="rounded-3xl p-8 max-w-lg w-full mx-4 shadow-2xl feedback-modal-container"
+        className={`rounded-3xl p-8 max-w-lg w-full mx-4 shadow-2xl feedback-modal-container relative transition-all duration-300 ${
+          isVisible
+            ? 'opacity-100 scale-100 translate-y-0'
+            : 'opacity-0 scale-95 translate-y-4'
+        }`}
         style={{ backgroundColor: 'var(--color-feedback-modal-bg)' }}
       >
         {!isSubmitted ? (
           <>
+            {/* Close button */}
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center transition-colors duration-200 hover:opacity-70 cursor-pointer"
+              style={{ color: 'var(--color-feedback-modal-text)' }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+
             {/* Header */}
             <div className="text-center mb-8">
               <h2

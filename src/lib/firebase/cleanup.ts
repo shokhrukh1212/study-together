@@ -57,7 +57,6 @@ export const cleanupOldSessionHistory = async (retentionDays: number = 90) => {
     )
 
     const snapshot = await getDocs(oldSessionsQuery)
-    console.log(`Found ${snapshot.size} old session history records to delete`)
 
     if (snapshot.size === 0) {
       console.log('✅ No old session history to clean up')
@@ -69,10 +68,6 @@ export const cleanupOldSessionHistory = async (retentionDays: number = 90) => {
     )
 
     await Promise.all(deletePromises)
-
-    console.log(
-      `✅ Cleaned up ${snapshot.size} old session history records successfully`
-    )
     return { success: true, deletedCount: snapshot.size }
   } catch (error) {
     console.error('❌ Session history cleanup failed:', error)

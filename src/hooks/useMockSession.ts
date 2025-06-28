@@ -59,7 +59,6 @@ export const useMockSession = (): UseMockSessionReturn => {
   const allUsers = currentUser ? [...mockUsers, currentUser] : mockUsers
 
   const joinRoom = useCallback(async (name: string) => {
-    console.log('🎭 Mock: Joining room with name:', name)
     setIsLoading(true)
 
     // Simulate network delay
@@ -75,13 +74,11 @@ export const useMockSession = (): UseMockSessionReturn => {
 
     setCurrentUser(newUser)
     setIsLoading(false)
-    console.log('🎭 Mock: User joined successfully')
   }, [])
 
   const startSession = useCallback(async () => {
     if (!currentUser) return
 
-    console.log('🎭 Mock: Starting session')
     setCurrentUser({
       ...currentUser,
       status: 'active',
@@ -91,8 +88,6 @@ export const useMockSession = (): UseMockSessionReturn => {
 
   const endSession = useCallback(async () => {
     if (!currentUser) return
-
-    console.log('🎭 Mock: Ending session')
 
     // Calculate session duration
     let duration = 0
@@ -116,7 +111,6 @@ export const useMockSession = (): UseMockSessionReturn => {
   }, [currentUser])
 
   const leaveRoom = useCallback(async () => {
-    console.log('🎭 Mock: Leaving room')
     setCurrentUser(null)
   }, [])
 
