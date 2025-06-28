@@ -76,9 +76,7 @@ export const useFirebaseSession = (
         // Update current user if exists in localStorage
         const savedUserId = localStorage.getItem('study-app-user-id')
         if (savedUserId) {
-          console.log('Checking saved user ID:', savedUserId)
           const savedUser = sessions.find(user => user.id === savedUserId)
-          console.log('Found saved user in sessions:', savedUser)
           if (savedUser) {
             // Update currentUser with latest Firebase data only if different
             setCurrentUser(prevUser => {
@@ -89,7 +87,6 @@ export const useFirebaseSession = (
                 prevUser.status !== savedUser.status ||
                 prevUser.name !== savedUser.name
               ) {
-                console.log('Updated current user from Firebase:', savedUser)
                 return savedUser
               }
 
@@ -97,7 +94,6 @@ export const useFirebaseSession = (
               const prevTime = prevUser.sessionStartTime?.toMillis() || null
               const newTime = savedUser.sessionStartTime?.toMillis() || null
               if (prevTime !== newTime) {
-                console.log('Updated current user from Firebase:', savedUser)
                 return savedUser
               }
 
@@ -107,7 +103,6 @@ export const useFirebaseSession = (
             // Heartbeat is handled by separate interval in different useEffect
           } else {
             // User not found in Firebase, clean up
-            console.log('User not found in Firebase, cleaning up')
             localStorage.removeItem('study-app-user-id')
             setCurrentUser(null)
           }
@@ -139,7 +134,6 @@ export const useFirebaseSession = (
 
         const docRef = await addDoc(sessionsRef, newSession)
         localStorage.setItem('study-app-user-id', docRef.id)
-        console.log('User joined successfully:', docRef.id)
 
         // Set currentUser immediately for UI responsiveness
         const newUser: Session = {
@@ -150,7 +144,6 @@ export const useFirebaseSession = (
           lastSeen: currentTime, // Use actual Timestamp instead of FieldValue
         }
         setCurrentUser(newUser)
-        console.log('Current user set:', newUser)
 
         // Send initial heartbeat after successful join
         updateUserHeartbeat(docRef.id)

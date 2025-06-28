@@ -40,7 +40,6 @@ export const saveCompletedSession = async (
 
     // Don't save sessions shorter than 5 seconds (likely accidental clicks)
     if (sessionDuration < 5) {
-      console.log('Session too short to save:', sessionDuration, 'seconds')
       return
     }
 
@@ -54,13 +53,6 @@ export const saveCompletedSession = async (
     }
 
     await addDoc(collection(db, 'completed_sessions'), completedSession)
-
-    console.log('✅ Completed session saved:', {
-      userId: getUserId(),
-      userName: currentUser.name,
-      duration: sessionDuration,
-      durationFormatted: formatDuration(sessionDuration),
-    })
   } catch (error) {
     console.error('❌ Failed to save completed session:', error)
     // Don't throw error to prevent disrupting user experience

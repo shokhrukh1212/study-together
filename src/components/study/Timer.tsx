@@ -20,7 +20,11 @@ export const Timer = ({ startTime, isActive, className = '' }: TimerProps) => {
    */
   const calculateElapsedTime = (start: Timestamp): number => {
     if (!start) return 0
-    return Math.floor((Date.now() - start.toMillis()) / 1000)
+
+    const elapsed = Math.floor((Date.now() - start.toMillis()) / 1000)
+
+    // Guard against negative time (server/client clock differences)
+    return Math.max(0, elapsed)
   }
 
   /**

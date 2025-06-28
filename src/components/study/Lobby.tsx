@@ -25,6 +25,19 @@ export const Lobby = ({
 }: ExtendedLobbyProps) => {
   const [name, setName] = useState('')
   const [isJoining, setIsJoining] = useState(false)
+  const [isStartingSession, setIsStartingSession] = useState(false)
+
+  // Add this useEffect after the existing one
+  useEffect(() => {
+    // Reset starting state when session actually begins
+    if (
+      currentUser?.status === 'active' &&
+      currentUser.sessionStartTime &&
+      isStartingSession
+    ) {
+      setIsStartingSession(false)
+    }
+  }, [currentUser?.status, currentUser?.sessionStartTime, isStartingSession])
 
   // Reset joining state when user successfully joins or leaves
   useEffect(() => {
@@ -56,24 +69,93 @@ export const Lobby = ({
     }
   }
 
+  /**
+   * Handles starting a session with loading state
+   */
+  const handleStartSession = async () => {
+    if (!onStartSession) return
+
+    setIsStartingSession(true)
+    try {
+      await onStartSession()
+    } catch (error) {
+      console.error('Failed to start session:', error)
+      setIsStartingSession(false)
+    }
+    // finally {
+    //   setIsStartingSession(false)
+    // }
+  }
+
+  /**
+   * Gets the appropriate message based on user state and total online count
+   */
+  const getCounterMessage = (): string => {
+    // If user hasn't joined yet (lobby view)
+    if (!currentUser) {
+      if (totalOnline === 0) {
+        return 'Perfect timing! Start your focused session and others will join you.'
+      } else if (totalOnline === 1) {
+        return 'Someone is deep in focus. Join the session!'
+      } else {
+        return 'People in silent focus - find your zone'
+      }
+    }
+
+    // If user has joined (study room view)
+    if (totalOnline === 1) {
+      return "You're leading today's study session. Stay focused!"
+    } else {
+      return "You're in great company - time to focus together!"
+    }
+  }
+
+  /**
+   * Determines whether to show the number based on user state
+   */
+  const shouldShowNumber = (): boolean => {
+    // In lobby view, don't show 0
+    if (!currentUser) return totalOnline > 0
+
+    // In study room view, only show if there are others (totalOnline > 1)
+    return totalOnline > 1
+  }
+
   return (
     <div className="min-h-screen bg-primary-bg flex flex-col items-center justify-center p-4">
       <div className="flex w-full max-w-[700px] flex-col items-center text-center">
         {/* Main Header */}
         <h1 className="mb-4 text-5xl font-bold text-primary-text leading-tight md:text-6xl">
-          Focus Together, Silently.
+          Focus <span className="text-accent font-extrabold">Together</span>,
+          Silently.
         </h1>
 
         <p className="mb-8 text-lg text-primary-text opacity-80 md:text-xl">
-          Join a live, global study session and find your focus in a supportive,
-          distraction-free environment.
+          Join a <span className="text-accent font-semibold">live</span>, global
+          study session and find your{' '}
+          <span className="text-accent font-semibold">focus</span> in a
+          supportive,
+          <span className="text-accent font-semibold">
+            {' '}
+            distraction-free
+          </span>{' '}
+          environment.
         </p>
 
         {/* Online Counter */}
-        <div className="mb-10 flex items-center gap-2">
-          <span className="text-4xl font-bold text-accent">{totalOnline}</span>
-          <p className="text-base text-primary-text">
-            {totalOnline === 1 ? 'person is' : 'people are'} studying right now
+        <div className="mb-10 w-full flex flex-col items-center text-center">
+          {/* Number - Large and prominent (conditionally shown) */}
+          {shouldShowNumber() && (
+            <div className="text-8xl font-bold text-accent mb-3 leading-none">
+              {totalOnline}
+            </div>
+          )}
+
+          {/* Dynamic message based on user state and count */}
+          <p
+            className={`text-xl md:text-2xl text-primary-text w-full leading-relaxed italic font-light ${!shouldShowNumber() ? 'mt-6' : ''}`}
+          >
+            {getCounterMessage()}
           </p>
         </div>
 
@@ -109,10 +191,13 @@ export const Lobby = ({
               !currentUser.sessionStartTime ? (
                 // State 2: Start Study Session
                 <button
-                  onClick={onStartSession}
-                  className="h-14 w-full cursor-pointer rounded-xl bg-accent px-8 text-lg font-bold text-slate-900 transition-all duration-150 ease-in-out hover:bg-accent/90 focus:outline-none"
+                  onClick={handleStartSession}
+                  disabled={isStartingSession}
+                  className="h-14 w-full cursor-pointer rounded-xl bg-accent px-8 text-lg font-bold text-slate-900 transition-all duration-150 ease-in-out hover:bg-accent/90 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  ▶ Start Study Session
+                  {isStartingSession
+                    ? '▶ Starting session...'
+                    : '▶ Start Study Session'}
                 </button>
               ) : (
                 // State 3: End Session

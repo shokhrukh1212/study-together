@@ -39,12 +39,6 @@ export const archiveSession = async (session: Session): Promise<void> => {
 
     // Add to session_history collection
     await addDoc(collection(db, 'session_history'), sessionHistory)
-    console.log('Session archived successfully:', {
-      originalSessionId: session.id,
-      name: session.name,
-      duration: sessionDuration,
-      completed: completedSession,
-    })
 
     // Remove from active sessions
     await deleteDoc(doc(db, 'sessions', session.id))
