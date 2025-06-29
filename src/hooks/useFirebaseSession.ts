@@ -28,6 +28,8 @@ interface UseFirebaseSessionReturn {
   showFeedbackModal: boolean
   sessionDuration: number
   closeFeedbackModal: () => void
+  isJoining: boolean
+  isLeaving: boolean
 }
 
 /**
@@ -43,8 +45,10 @@ export const useFirebaseSession = (
   const [error, setError] = useState<string | null>(null)
   const [showFeedbackModal, setShowFeedbackModal] = useState(false)
   const [sessionDuration, setSessionDuration] = useState(0)
+  const [isJoining, setIsJoining] = useState(false)
+  const [isLeaving, setIsLeaving] = useState(false)
 
-  const updateUserHeartbeat = async (userId: string) => {
+  const updateUserHeartbeat = useCallback(async (userId: string) => {
     try {
       await updateDoc(doc(db, 'sessions', userId), {
         lastSeen: serverTimestamp(),
@@ -52,7 +56,7 @@ export const useFirebaseSession = (
     } catch (error) {
       console.error('Failed to update heartbeat:', error)
     }
-  }
+  }, [])
 
   // Real-time listener for all sessions
   useEffect(() => {
@@ -73,38 +77,40 @@ export const useFirebaseSession = (
         setIsLoading(false)
         setError(null)
 
-        // Update current user if exists in localStorage
-        const savedUserId = localStorage.getItem('study-app-user-id')
-        if (savedUserId) {
-          const savedUser = sessions.find(user => user.id === savedUserId)
-          if (savedUser) {
-            // Update currentUser with latest Firebase data only if different
-            setCurrentUser(prevUser => {
-              // Only update if the user data actually changed
-              if (
-                !prevUser ||
-                prevUser.id !== savedUser.id ||
-                prevUser.status !== savedUser.status ||
-                prevUser.name !== savedUser.name
-              ) {
-                return savedUser
-              }
+        // Only update currentUser from Firebase if we're not in the middle of joining
+        if (!isJoining && !isLeaving) {
+          const savedUserId = localStorage.getItem('study-app-user-id')
+          if (savedUserId) {
+            const savedUser = sessions.find(user => user.id === savedUserId)
+            if (savedUser) {
+              // Update currentUser with latest Firebase data only if different
+              setCurrentUser(prevUser => {
+                // Only update if the user data actually changed
+                if (
+                  !prevUser ||
+                  prevUser.id !== savedUser.id ||
+                  prevUser.status !== savedUser.status ||
+                  prevUser.name !== savedUser.name
+                ) {
+                  return savedUser
+                }
 
-              // Check sessionStartTime with proper Timestamp comparison
-              const prevTime = prevUser.sessionStartTime?.toMillis() || null
-              const newTime = savedUser.sessionStartTime?.toMillis() || null
-              if (prevTime !== newTime) {
-                return savedUser
-              }
+                // Check sessionStartTime with proper Timestamp comparison
+                const prevTime = prevUser.sessionStartTime?.toMillis() || null
+                const newTime = savedUser.sessionStartTime?.toMillis() || null
+                if (prevTime !== newTime) {
+                  return savedUser
+                }
 
-              return prevUser // No actual change, prevent unnecessary re-render
-            })
-            // NOTE: Removed updateUserHeartbeat here to prevent infinite loop
-            // Heartbeat is handled by separate interval in different useEffect
-          } else {
-            // User not found in Firebase, clean up
-            localStorage.removeItem('study-app-user-id')
-            setCurrentUser(null)
+                return prevUser // No actual change, prevent unnecessary re-render
+              })
+              // NOTE: Removed updateUserHeartbeat here to prevent infinite loop
+              // Heartbeat is handled by separate interval in different useEffect
+            } else {
+              // User not found in Firebase, clean up
+              localStorage.removeItem('study-app-user-id')
+              setCurrentUser(null)
+            }
           }
         }
       },
@@ -116,10 +122,12 @@ export const useFirebaseSession = (
     )
 
     return () => unsubscribe()
-  }, [sessionsRef])
+  }, [sessionsRef, isJoining, isLeaving])
 
   const joinRoom = useCallback(
     async (name: string) => {
+      setIsJoining(true)
+
       try {
         setIsLoading(true)
         setError(null)
@@ -148,13 +156,15 @@ export const useFirebaseSession = (
         // Send initial heartbeat after successful join
         updateUserHeartbeat(docRef.id)
         setIsLoading(false)
+        setIsJoining(false)
       } catch (error) {
         console.error('Failed to join room:', error)
         setError('Failed to join room')
         setIsLoading(false)
+        setIsJoining(false)
       }
     },
-    [sessionsRef]
+    [sessionsRef, updateUserHeartbeat]
   )
 
   const startSession = useCallback(async () => {
@@ -212,15 +222,18 @@ export const useFirebaseSession = (
     if (!currentUser) return
 
     try {
+      setIsLeaving(true)
       // Remove user from local state immediately for UI responsiveness
       setCurrentUser(null)
       localStorage.removeItem('study-app-user-id')
 
       // Archive session instead of deleting to preserve data for analytics
       await archiveSession(currentUser)
+      setIsLeaving(false)
     } catch (error) {
       console.error('Failed to leave room:', error)
       setError('Failed to leave room')
+      setIsLeaving(false)
     }
   }, [currentUser])
 
@@ -261,7 +274,7 @@ export const useFirebaseSession = (
       if (interval) clearInterval(interval)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [currentUser])
+  }, [currentUser, updateUserHeartbeat])
 
   // Cleanup on page unload
   useEffect(() => {
@@ -298,5 +311,7 @@ export const useFirebaseSession = (
     showFeedbackModal,
     sessionDuration,
     closeFeedbackModal,
+    isJoining,
+    isLeaving,
   }
 }
