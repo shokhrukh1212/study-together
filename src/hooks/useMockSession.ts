@@ -15,6 +15,8 @@ interface UseMockSessionReturn {
   showFeedbackModal: boolean
   sessionDuration: number
   closeFeedbackModal: () => void
+  isJoining?: boolean
+  isLeaving?: boolean
 }
 
 /**

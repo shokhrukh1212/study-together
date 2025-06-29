@@ -4,7 +4,7 @@ import { useFirebaseSession } from '@/hooks/useFirebaseSession'
 import { useMockSession } from '@/hooks/useMockSession'
 import { collection } from 'firebase/firestore'
 import { db } from '@/lib/firebase/firebase'
-import { useMemo } from 'react'
+import { useMemo, memo } from 'react'
 
 // Toggle between Firebase and Mock mode for development
 const USE_MOCK_MODE = false // New Firebase project ready - testing real-time functionality
@@ -13,7 +13,7 @@ const USE_MOCK_MODE = false // New Firebase project ready - testing real-time fu
  * Main study application component
  * Handles the core study room functionality
  */
-export const StudyApp = () => {
+const StudyAppComponent = () => {
   // Create sessions collection reference once with useMemo
   const sessionsRef = useMemo(() => collection(db, 'sessions'), [])
 
@@ -34,6 +34,8 @@ export const StudyApp = () => {
     showFeedbackModal,
     sessionDuration,
     closeFeedbackModal,
+    isJoining,
+    isLeaving,
   } = USE_MOCK_MODE ? mockSession : firebaseSession
 
   // Show error state if Firebase connection fails
@@ -84,6 +86,8 @@ export const StudyApp = () => {
         onStartSession={startSession}
         onEndSession={endSession}
         onLeaveRoom={leaveRoom}
+        isJoining={isJoining}
+        isLeaving={isLeaving}
       />
 
       {/* Feedback Modal */}
@@ -95,3 +99,5 @@ export const StudyApp = () => {
     </>
   )
 }
+
+export const StudyApp = memo(StudyAppComponent)

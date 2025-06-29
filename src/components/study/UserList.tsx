@@ -1,3 +1,4 @@
+import { useMemo, memo } from 'react'
 import type { Session } from '@/types/types'
 import { Timer } from './Timer'
 
@@ -11,22 +12,23 @@ interface UserListProps {
  * UserList component that displays all active users with their study timers
  * Shows different styling for the current user vs other users
  */
-export const UserList = ({
+const UserListComponent = ({
   allUsers,
   currentUser,
   isLobbyView = false,
 }: UserListProps) => {
+  // Use real users for both lobby and study room views
+  // Only include currentUser if it exists and is not null
+  const displayUsers = useMemo(() => {
+    return currentUser && currentUser.id
+      ? [currentUser, ...allUsers.filter(u => u.id !== currentUser.id)]
+      : allUsers
+  }, [allUsers, currentUser])
+
   // Show user list if: lobby view OR current user exists (even if alone)
   if (allUsers.length === 0 && !isLobbyView && !currentUser) {
     return null
   }
-
-  // Use real users for both lobby and study room views
-  // Only include currentUser if it exists and is not null
-  const displayUsers =
-    currentUser && currentUser.id
-      ? [currentUser, ...allUsers.filter(u => u.id !== currentUser.id)]
-      : allUsers
 
   return (
     <div className="space-y-2 w-full max-h-80 overflow-y-auto">
@@ -78,3 +80,5 @@ export const UserList = ({
     </div>
   )
 }
+
+export const UserList = memo(UserListComponent)

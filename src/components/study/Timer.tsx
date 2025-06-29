@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import { Timestamp } from 'firebase/firestore'
 
 interface TimerProps {
@@ -11,27 +11,31 @@ interface TimerProps {
  * Timer component that displays elapsed time since session start
  * Updates every second when active, calculates from Firebase Timestamp
  */
-export const Timer = ({ startTime, isActive, className = '' }: TimerProps) => {
+const TimerComponent = ({
+  startTime,
+  isActive,
+  className = '',
+}: TimerProps) => {
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
 
   /**
    * Calculate elapsed time from Firebase Timestamp
    * Returns seconds since the start time
    */
-  const calculateElapsedTime = (start: Timestamp): number => {
+  const calculateElapsedTime = useCallback((start: Timestamp): number => {
     if (!start) return 0
 
     const elapsed = Math.floor((Date.now() - start.toMillis()) / 1000)
 
     // Guard against negative time (server/client clock differences)
     return Math.max(0, elapsed)
-  }
+  }, [])
 
   /**
    * Format seconds into MM:SS or HH:MM:SS format
    * Shows hours only when >= 1 hour
    */
-  const formatTime = (totalSeconds: number): string => {
+  const formatTime = useCallback((totalSeconds: number): string => {
     const hours = Math.floor(totalSeconds / 3600)
     const minutes = Math.floor((totalSeconds % 3600) / 60)
     const seconds = totalSeconds % 60
@@ -41,7 +45,7 @@ export const Timer = ({ startTime, isActive, className = '' }: TimerProps) => {
     }
 
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-  }
+  }, [])
 
   // Update timer every second when active
   useEffect(() => {
@@ -59,7 +63,7 @@ export const Timer = ({ startTime, isActive, className = '' }: TimerProps) => {
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [startTime, isActive])
+  }, [startTime, isActive, calculateElapsedTime])
 
   // Handle tab visibility changes - recalculate when tab becomes visible
   useEffect(() => {
@@ -72,7 +76,7 @@ export const Timer = ({ startTime, isActive, className = '' }: TimerProps) => {
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () =>
       document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [startTime, isActive])
+  }, [startTime, isActive, calculateElapsedTime])
 
   if (!isActive || !startTime) {
     return <span className={`font-mono text-lg ${className}`}>--:--</span>
@@ -84,3 +88,5 @@ export const Timer = ({ startTime, isActive, className = '' }: TimerProps) => {
     </span>
   )
 }
+
+export const Timer = memo(TimerComponent)
